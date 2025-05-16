@@ -13,6 +13,7 @@ import '../../model/channel.dart';
 import '../../model/episode.dart';
 import '../../model/feed.dart';
 import '../../model/pcindex.dart';
+import '../../model/settings.dart';
 import '../../util/constants.dart';
 import '../service/api/pcindex.dart';
 import '../service/local/sqflite.dart';
@@ -101,7 +102,7 @@ class FeedRepository {
   }
 
   Future<bool> unsubscribe(int channelId) async {
-    await deleteEpisodesByChannel(channelId);
+    _log.fine('unsubscribe');
     return await deleteChannel(channelId);
   }
 
@@ -115,7 +116,7 @@ class FeedRepository {
     for (final channel in channels) {
       if (force ||
           channel.checked == null ||
-          channel.checked!.isAfter(yesterday)) {
+          channel.checked!.isBefore(yesterday)) {
         _refreshChannel(channel);
         updated = true;
       }
@@ -125,7 +126,7 @@ class FeedRepository {
   }
 
   Future<bool> _refreshChannel(Channel channel) async {
-    _log.fine('refresh: ${channel.id}');
+    _log.fine('refreshChannel: ${channel.id}');
     final feed = await getFeed(channel.url);
     if (feed != null) {
       await createChannel(feed.channel);
@@ -152,29 +153,27 @@ class FeedRepository {
   }
 
   Future<bool> createChannel(Channel channel) async {
-    final data = channel.toSqlite();
-    // remove id key
-    data.remove('id');
-
-    final keys = data.entries.map((e) => e.key).join(',');
-    final vals = data.entries.map((e) => e.value).join(',');
-    final sets = data.entries.map((e) => "${e.key}=${e.value}").join(',');
     return await _dbSrv.insert(
-          "INSERT INTO channels($keys) VALUES($vals)"
-          " ON CONFLICT(url) DO UPDATE SET $sets",
+          "INSERT INTO channels(${channel.keys()}) VALUES(${channel.vals()})"
+          " ON CONFLICT(url) DO UPDATE SET ${channel.sets()}",
         ) ==
         1;
   }
 
-  Future<bool> updateChannel(int channelId, Map<String, String> data) async {
-    final sets = data.entries.map((e) => "${e.key}=${e.value}").join(',');
-    return await _dbSrv.update(
-          "UPDATE channels SET $sets WHERE id=$channelId",
-        ) ==
-        1;
+  Future<bool> updateChannel(Channel channel) async {
+    if (channel.id != null) {
+      return await _dbSrv.update(
+            "UPDATE channels SET${channel.sets()} WHERE id=${channel.id}",
+          ) ==
+          1;
+    }
+    return false;
   }
 
   Future<bool> deleteChannel(int channelId) async {
+    _log.fine('deleteChannel');
+    await _stSrv.deleteDirectory(channelId);
+    await deleteEpisodesByChannel(channelId);
     return await _dbSrv.delete("DELETE FROM channels WHERE id = $channelId") ==
         1;
   }
@@ -194,10 +193,10 @@ class FeedRepository {
 
   // Episode
 
-  Future<List<Episode>> getEpisodes() async {
+  Future<List<Episode>> getEpisodes({int period = 90}) async {
     final start =
         DateTime.now()
-            .subtract(Duration(days: 90)) // FIXME: use settings
+            .subtract(Duration(days: period))
             .toIso8601String()
             .split('T')
             .first;
@@ -211,10 +210,13 @@ class FeedRepository {
     return rows.map((e) => Episode.fromSqlite(e)).toList();
   }
 
-  Future<List<Episode>> getEpisodesByChannel(int channelId) async {
+  Future<List<Episode>> getEpisodesByChannel(
+    int channelId, {
+    int period = 90,
+  }) async {
     final start =
         DateTime.now()
-            .subtract(Duration(days: 90)) // FIXME: use settings
+            .subtract(Duration(days: period))
             .toIso8601String()
             .split('T')
             .first;
@@ -240,26 +242,21 @@ class FeedRepository {
   }
 
   Future<bool> createEpisode(Episode episode) async {
-    final data = episode.toSqlite();
-    // remove id key
-    data.remove('id');
-    final keys = data.entries.map((e) => e.key).join(',');
-    final vals = data.entries.map((e) => e.value).join(',');
-    final sets = data.entries.map((e) => "${e.key}=${e.value}").join(',');
-
     return await _dbSrv.insert(
-          "INSERT INTO episodes($keys) VALUES($vals)"
-          " ON CONFLICT(guid) DO UPDATE SET $sets",
+          "INSERT INTO episodes(${episode.keys()}) VALUES(${episode.vals()})"
+          " ON CONFLICT(guid) DO UPDATE SET ${episode.sets()}",
         ) ==
         1;
   }
 
-  Future<bool> updateEpisode(int episodeId, Map<String, String> data) async {
-    final sets = data.entries.map((e) => "${e.key}=${e.value}").join(',');
-    return await _dbSrv.update(
-          "UPDATE episodes SET $sets WHERE id=$episodeId",
-        ) ==
-        1;
+  Future<bool> updateEpisode(Episode episode) async {
+    if (episode.id != null) {
+      return await _dbSrv.update(
+            "UPDATE episodes SET ${episode.sets()} WHERE id=${episode.id}",
+          ) ==
+          1;
+    }
+    return false;
   }
 
   Future<bool> deleteEpisodesByChannel(int channelId) async {
@@ -277,6 +274,7 @@ class FeedRepository {
             .toIso8601String()
             .split("T")
             .first;
+    // TODO delete downloaded episode and its image from storage
     return await _dbSrv.delete(
       "DELETE FROM episodes "
       "WHERE DATETIME(published) < $ref AND liked != 1",
@@ -318,20 +316,50 @@ class FeedRepository {
         1;
   }
 
+  // Settings
+
+  Future<Settings> getSettings() async {
+    final rows = await _dbSrv.query("SELECT * from settings");
+    if (rows.isEmpty) {
+      final settings = Settings.init();
+      await createSettings(settings);
+      return settings;
+    } else {
+      return Settings.fromSqlite(rows.first);
+    }
+  }
+
+  Future<bool> createSettings(Settings settings) async {
+    return await _dbSrv.insert(
+          "INSERT INTO settings(${settings.keys()}) VALUES(${settings.vals()})",
+        ) ==
+        1;
+  }
+
+  Future<bool> updateSettings(Settings settings) async {
+    if (settings.id != null) {
+      return await _dbSrv.update(
+            "UPDATE settings SET ${settings.sets()} WHERE id=${settings.id}",
+          ) ==
+          1;
+    }
+    return false;
+  }
+
   // Resources
 
   Future<bool> _downloadResource(
     int channelId,
-    String url, [
-    String? fname,
-  ]) async {
+    String url,
+    String fname,
+  ) async {
     bool flag = false;
     final client = http.Client();
     final req = http.Request('GET', Uri.parse(url));
     final res = await client.send(req);
     if (res.statusCode == 200) {
-      _log.fine('downloading: $url');
-      final file = await _stSrv.getFile(channelId, url, fname);
+      _log.fine('downloading: $url to $fname');
+      final file = await _stSrv.getFile(channelId, fname);
       await file.create(recursive: true);
       final sink = file.openWrite();
       await res.stream.pipe(sink);
@@ -341,9 +369,9 @@ class FeedRepository {
     return flag;
   }
 
-  Future<Uri?> _getAudioUri(int? channelId, String? url, String guid) async {
+  Future<Uri?> _getAudioUri(int? channelId, String? url, String fname) async {
     if (channelId != null && url != null) {
-      final file = await _stSrv.getFile(channelId, url, guid);
+      final file = await _stSrv.getFile(channelId, fname);
       if (file.existsSync()) {
         return Uri.file(file.path);
       }
@@ -354,13 +382,18 @@ class FeedRepository {
 
   Future<Uri?> _getImageUri(int? channelId, String? url) async {
     if (url != null) {
-      if (channelId != null) {
-        final file = await _stSrv.getFile(channelId, url);
-        if (file.existsSync() || await _downloadResource(channelId, url)) {
-          return Uri.file(file.path);
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        if (channelId != null) {
+          final fname = uri.path.split('/').last;
+          final file = await _stSrv.getFile(channelId, fname);
+          if (file.existsSync() ||
+              await _downloadResource(channelId, url, fname)) {
+            return Uri.file(file.path);
+          }
         }
+        return uri;
       }
-      return Uri.parse(url);
     }
     return null;
   }
@@ -400,10 +433,11 @@ class FeedRepository {
       if (await _downloadResource(
         episode.channelId!,
         episode.mediaUrl!,
-        episode.guid,
+        episode.mediaFname,
       )) {
         // download successful
-        await updateEpisode(episode.id!, {"downloaded": "TRUE"});
+        episode.downloaded = true;
+        await updateEpisode(episode);
         return true;
       }
     }
@@ -416,7 +450,7 @@ class FeedRepository {
     final audioUri = await _getAudioUri(
       episode.channelId,
       episode.mediaUrl,
-      episode.guid,
+      episode.mediaFname,
     );
 
     if (audioUri != null) {

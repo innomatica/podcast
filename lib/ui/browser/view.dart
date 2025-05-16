@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../util/constants.dart';
 import 'model.dart';
 
 const javaScript = '''
@@ -39,11 +38,18 @@ class _BrowserViewState extends State<BrowserView> {
               // },
               onPageFinished: (url) {
                 _log.fine('onPageFin: $url');
+                // FIXME: fetched twice
                 widget.model.fetchFeed(url);
               },
             ),
-          )
-          ..loadRequest(Uri.parse(defaultSearchEngineUrl));
+          );
+    // ..loadRequest(Uri.parse(defaultSearchEngineUrl));
+    _load();
+  }
+
+  Future _load() async {
+    final url = await widget.model.getSearchEngineUrl();
+    _controller.loadRequest(Uri.parse(url));
   }
 
   @override

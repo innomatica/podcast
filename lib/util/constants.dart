@@ -4,8 +4,7 @@ const appVersion = '1.0.0+1';
 const appId = 'com.innomatic.podcast';
 
 const developerWebsite = 'https://innomatic.ca';
-// FIXME
-const sourceRepository = 'https://github.com';
+const sourceRepository = 'https://github.com/innomatica/podcast';
 
 // podcast index
 const pcIdxEndpoint = 'https://api.podcastindex.org/api/1.0';
@@ -20,4 +19,4 @@ const defaultSearchEngineUrl = 'https://ecosia.org';
 
 // retention days
 const retentionDays = [30, 60, 90, 180];
-const defaultRetentionDay = 90;
+const defaultRetentionPeriod = 90;

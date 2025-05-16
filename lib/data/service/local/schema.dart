@@ -52,4 +52,11 @@ const channelSchema = '''CREATE TABLE IF NOT EXISTS channels (
   checked TIMESTAMP,
   image_url TEXT,
   extras TEXT
-); ''';
+);''';
+
+const settingsSchema = '''CREATE TABLE IF NOT EXISTS settings (
+  id INTEGER PRIMARY KEY,
+  retention_period INTEGER,
+  search_engine_url TEXT,
+  last_update TIMESTAMP
+);''';

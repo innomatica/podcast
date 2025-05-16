@@ -4,6 +4,7 @@ import 'package:logging/logging.dart';
 
 import '../../data/repository/feed.dart';
 import '../../model/episode.dart';
+import '../../model/settings.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final FeedRepository _feedRepo;
@@ -17,8 +18,10 @@ class HomeViewModel extends ChangeNotifier {
   // ignore: unused_field
   final _log = Logger('HomeModel');
   List<Episode> _episodes = [];
+  Settings? _settings;
 
   List<Episode> get episodes => _episodes;
+  Settings? get settings => _settings;
   List<Episode> get unplayed =>
       _episodes.where((e) => e.played != true).toList();
   List<Episode> get liked => _episodes.where((e) => e.liked == true).toList();
@@ -68,6 +71,14 @@ class HomeViewModel extends ChangeNotifier {
 
   Future load() async {
     _log.fine('load');
+    _settings = await _feedRepo.getSettings();
+
+    // if (_settings?.lastUpdate != null &&
+    //     DateTime.now().difference(_settings!.lastUpdate!) > Duration(days: 1)) {
+    //   await refreshData();
+    // }
+    await _feedRepo.refreshData();
+
     _episodes = await _feedRepo.getEpisodes();
     notifyListeners();
   }
@@ -93,9 +104,8 @@ class HomeViewModel extends ChangeNotifier {
       } else {
         await _feedRepo.setPlayed(episode.id!);
       }
-      await load();
-      // _episodes = await _feedRepo.getEpisodes();
-      // notifyListeners();
+      _episodes = await _feedRepo.getEpisodes();
+      notifyListeners();
     }
   }
 
@@ -106,22 +116,44 @@ class HomeViewModel extends ChangeNotifier {
       } else {
         await _feedRepo.setLiked(episode.id!);
       }
-      await load();
-      // _episodes = await _feedRepo.getEpisodes();
-      // notifyListeners();
+      _episodes = await _feedRepo.getEpisodes();
+      notifyListeners();
     }
   }
 
   Future downloadEpisode(Episode episode) async {
     await _feedRepo.downloadEpisode(episode);
-    await load();
-    // _episodes = await _feedRepo.getEpisodes();
-    // notifyListeners();
+    _episodes = await _feedRepo.getEpisodes();
+    notifyListeners();
   }
+
+  Future updateRetentionPeriod(int period) async {
+    if (_settings?.id != null) {
+      _settings!.retentionPeriod = period;
+      await _feedRepo.updateSettings(_settings!);
+      _settings = await _feedRepo.getSettings();
+      notifyListeners();
+    }
+  }
+
+  Future updateSearchEngine(String url) async {
+    if (_settings?.id != null) {
+      _settings!.searchEngineUrl = url;
+      await _feedRepo.updateSettings(_settings!);
+      _settings = await _feedRepo.getSettings();
+      notifyListeners();
+    }
+  }
+
+  // Future updateSettings() async {
+  //   if (_settings?.id != null) {
+  //     await _feedRepo.updateSettings(_settings!);
+  //   }
+  // }
 
   Future refreshData() async {
     await _feedRepo.refreshData(force: true);
-    load();
+    await load();
   }
 
   Future stop() async {

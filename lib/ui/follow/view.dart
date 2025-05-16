@@ -17,11 +17,11 @@ class FollowView extends StatelessWidget {
             children: [
               SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, 'pcidx'),
-                child: const Text('PodcastIndex Search'),
+                child: const Text('Search PodcastIndex'),
               ),
               SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, 'rss'),
-                child: const Text('Browse and Find RSS URL'),
+                child: const Text('Browse Web and Find RSS'),
               ),
             ],
           ),
@@ -29,46 +29,53 @@ class FollowView extends StatelessWidget {
   }
 
   Widget _buildChannelList(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: MediaQuery.of(context).size.width ~/ 120,
-      children:
-          model.channels.map((e) {
-            return GestureDetector(
-              onTap: () {
-                context
-                    .push(
-                      Uri(
-                        path: '/channel',
-                        queryParameters: {'url': e.url},
-                      ).toString(),
-                    )
-                    .then((value) => model.load());
-              },
-              child: GridTile(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // thumbnail
-                    FutureImage(
-                      future: model.getChannelImage(e),
-                      width: 100,
-                      height: 100,
+    return model.channels.isNotEmpty
+        ? GridView.count(
+          crossAxisCount: MediaQuery.of(context).size.width ~/ 120,
+          children:
+              model.channels.map((e) {
+                return GestureDetector(
+                  onTap: () {
+                    context
+                        .push(
+                          Uri(
+                            path: '/channel',
+                            queryParameters: {'url': e.url},
+                          ).toString(),
+                        )
+                        .then((value) => model.load());
+                  },
+                  child: GridTile(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        // thumbnail
+                        FutureImage(
+                          future: model.getChannelImage(e),
+                          width: 100,
+                          height: 100,
+                        ),
+                        // title
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text(
+                            e.title ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    // title
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(
-                        e.title ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-    );
+                  ),
+                );
+              }).toList(),
+        )
+        : Center(
+          child: Opacity(
+            opacity: 0.3,
+            child: Icon(Icons.subscriptions_rounded, size: 100),
+          ),
+        );
   }
 
   @override
@@ -78,6 +85,7 @@ class FollowView extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => context.pop(),
+          // onPressed: () => context.go('/'),
         ),
       ),
       body: ListenableBuilder(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:podcast/util/constants.dart';
 
 import '../../data/repository/feed.dart';
 import '../../model/feed.dart';
@@ -28,5 +29,10 @@ class BrowserViewModel extends ChangeNotifier {
       _log.fine('subscribed: $_subscribed');
     }
     notifyListeners();
+  }
+
+  Future<String> getSearchEngineUrl() async {
+    final settings = await _feedRepo.getSettings();
+    return settings.searchEngineUrl ?? defaultSearchEngineUrl;
   }
 }

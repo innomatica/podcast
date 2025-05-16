@@ -22,6 +22,7 @@ class DatabaseService {
           await db.execute(fgkeyPragma);
           await db.execute(channelSchema);
           await db.execute(episodeSchema);
+          await db.execute(settingsSchema);
         },
       );
     }
@@ -30,25 +31,25 @@ class DatabaseService {
 
   Future<List<Map<String, Object?>>> query(String sql) async {
     final db = await getDatabase();
-    // _log.fine(sql);
+    _log.fine(sql);
     return db.rawQuery(sql);
   }
 
   Future<int> insert(String sql) async {
     final db = await getDatabase();
-    // _log.fine(sql);
+    _log.fine(sql);
     return db.rawInsert(sql);
   }
 
   Future<int> update(String sql) async {
     final db = await getDatabase();
-    // _log.fine(sql);
+    _log.fine(sql);
     return db.rawUpdate(sql);
   }
 
   Future<int> delete(String sql) async {
     final db = await getDatabase();
-    // _log.fine(sql);
+    _log.fine(sql);
     return db.rawDelete(sql);
   }
 }

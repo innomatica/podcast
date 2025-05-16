@@ -21,20 +21,8 @@ String sizeStr(int? size) {
   return "??kb";
 }
 
-// SQLite conversion
-
-String sqlStr(String? input) {
-  return input is String ? "'${input.replaceAll("'", "''")}'" : "NULL";
-}
-
-String sqlInt(int? input) {
-  return input is int ? "$input" : "NULL";
-}
-
-String sqlBool(bool? input) {
-  return input is bool
-      ? input
-          ? "TRUE" // 1
-          : "FALSE" // 0
-      : "NULL";
+String daysAgo(DateTime? date) {
+  return date != null
+      ? DateTime.now().difference(date).inDays.toString()
+      : 'unknown';
 }

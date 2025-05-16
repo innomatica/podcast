@@ -4,9 +4,10 @@ import 'dart:convert';
 // import 'package:just_audio_background/just_audio_background.dart'
 //     show MediaItem;
 
-import '../../util/helpers.dart' show sqlBool, sqlInt, sqlStr;
+// import '../../util/helpers.dart' show sqlBool, sqlInt, sqlJson, sqlStr, sqlTime;
+import 'sqlite.dart';
 
-class Episode {
+class Episode extends SqliteModel {
   int? id; // db specific: primary key
   String guid;
   String? title;
@@ -63,6 +64,8 @@ class Episode {
     this.played,
     this.liked,
   });
+
+  String get mediaFname => guid;
 
   @override
   String toString() {
@@ -133,9 +136,10 @@ class Episode {
     );
   }
 
+  @override
   Map<String, String> toSqlite() {
     return {
-      "id": sqlInt(id),
+      // "id": sqlInt(id),
       "guid": sqlStr(guid),
       "title": sqlStr(title),
       "subtitle": sqlStr(subtitle),
@@ -144,8 +148,8 @@ class Episode {
       "language": sqlStr(language),
       "categories": sqlStr(categories),
       "keywords": sqlStr(keywords),
-      "updated": sqlStr(updated?.toIso8601String()),
-      "published": sqlStr(published?.toIso8601String()),
+      "updated": sqlTime(updated),
+      "published": sqlTime(published),
       "link": sqlStr(link),
       "media_url": sqlStr(mediaUrl),
       "media_type": sqlStr(mediaType),
@@ -153,27 +157,11 @@ class Episode {
       "media_duration": sqlInt(mediaDuration),
       "media_seek_pos": sqlInt(mediaSeekPos),
       "image_url": sqlStr(imageUrl),
-      "extras": sqlStr(extras != null ? jsonEncode(extras) : null),
+      "extras": sqlJson(extras),
       "channel_id": sqlInt(channelId),
       "downloaded": sqlBool(downloaded),
       "played": sqlBool(played),
       "liked": sqlBool(liked),
     };
   }
-
-  // IndexedAudioSource? toAudioSource() {
-  //   return mediaUrl != null
-  //       ? AudioSource.uri(
-  //         Uri.parse(mediaUrl!),
-  //         tag: MediaItem(
-  //           id: guid,
-  //           title: title ?? 'Unknown Title',
-  //           album: channelTitle ?? 'Unknown Album',
-  //           artist: author,
-  //           artUri: imageUrl != null ? Uri.tryParse(imageUrl!) : null,
-  //           extras: {},
-  //         ),
-  //       )
-  //       : null;
-  // }
 }

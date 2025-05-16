@@ -1,8 +1,10 @@
 import 'dart:convert';
 
-import '../util/helpers.dart' show sqlInt, sqlStr;
+import 'sqlite.dart';
 
-class Channel {
+// import '../util/helpers.dart' show sqlInt, sqlJson, sqlStr, sqlTime;
+
+class Channel extends SqliteModel {
   int? id;
   String url;
   String? title;
@@ -64,7 +66,6 @@ class Channel {
         id: data['url'].hashCode,
         title: data['title'],
         url: data['url'],
-        // source: PodcastSource.pcidx,
         link: data['link'],
         description: data['description'],
         author: data['author'],
@@ -121,9 +122,10 @@ class Channel {
     );
   }
 
+  @override
   Map<String, String> toSqlite() {
     return {
-      "id": sqlInt(id),
+      // "id": sqlInt(id),
       "url": sqlStr(url),
       "title": sqlStr(title),
       "subtitle": sqlStr(subtitle),
@@ -132,11 +134,11 @@ class Channel {
       "description": sqlStr(description),
       "language": sqlStr(language),
       "link": sqlStr(link),
-      "updated": sqlStr(updated?.toIso8601String()),
-      "published": sqlStr(published?.toIso8601String()),
-      "checked": sqlStr(checked?.toIso8601String()),
+      "updated": sqlTime(updated),
+      "published": sqlTime(published),
+      "checked": sqlTime(checked),
       "image_url": sqlStr(imageUrl),
-      "extras": sqlStr(extras != null ? jsonEncode(extras) : null),
+      "extras": sqlJson(extras),
     };
   }
 }

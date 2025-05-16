@@ -24,12 +24,15 @@ class FeedViewModel extends ChangeNotifier {
     _feed = null;
 
     if (url != null && url.isNotEmpty) {
+      // try local database first
       final feed = await _feedRepo.getFeed(url);
       // final feed = null;
       if (feed != null) {
+        // local found: already subscribed
         _subscribed = true;
         _feed = feed;
       } else {
+        // try feed source
         _subscribed = false;
         _feed = await _feedRepo.fetchFeed(url);
       }
@@ -52,7 +55,7 @@ class FeedViewModel extends ChangeNotifier {
 
   Future unsubscribe() async {
     if (_subscribed && _feed?.channel.id != null) {
-      // _log.fine('unsubscribe');
+      _log.fine('unsubscribe');
       if (await _feedRepo.unsubscribe(_feed!.channel.id!)) {
         _subscribed = false;
       }

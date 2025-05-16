@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../model/episode.dart';
 import '../../util/constants.dart';
-import '../../util/helpers.dart' show durationStr, sizeStr;
+import '../../util/helpers.dart' show daysAgo, durationStr, sizeStr;
 import '../../util/miniplayer.dart' show MiniPlayer;
 import '../../util/widgets.dart' show FutureImage;
 import 'model.dart';
@@ -28,6 +28,7 @@ class _HomeViewState extends State<HomeView> {
   final _log = Logger('HomeView');
   int pageIndex = 0;
   ViewFilter filter = ViewFilter.unplayed;
+  final _searchEngine = TextEditingController();
   Timer? sleepTimer;
   int sleepCount = 0;
 
@@ -35,6 +36,12 @@ class _HomeViewState extends State<HomeView> {
   initState() {
     super.initState();
     widget.model.load();
+  }
+
+  @override
+  void dispose() {
+    _searchEngine.dispose();
+    super.dispose();
   }
 
   void _rotateViewFilter() {
@@ -207,7 +214,7 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ],
               ),
-              onTap: () {
+              onTap: () async {
                 context
                     .push(
                       Uri(
@@ -232,7 +239,11 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildDrawer() {
-    int retentionDay = defaultRetentionDay;
+    // _log.fine('buildDrawer.settings:${widget.model.settings}');
+    final days = daysAgo(widget.model.settings?.lastUpdate);
+    int retentionPeriod =
+        widget.model.settings?.retentionPeriod ?? defaultRetentionPeriod;
+    _searchEngine.text = widget.model.settings?.searchEngineUrl ?? '';
     return Drawer(
       child: ListView(
         children: [
@@ -255,7 +266,7 @@ class _HomeViewState extends State<HomeView> {
                 Text('keep episodes up to'),
                 SizedBox(width: 8),
                 DropdownButton<int>(
-                  value: retentionDay,
+                  value: retentionPeriod,
                   items:
                       retentionDays
                           .map(
@@ -265,9 +276,10 @@ class _HomeViewState extends State<HomeView> {
                             ),
                           )
                           .toList(),
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     if (value != null) {
-                      retentionDay = value;
+                      retentionPeriod = value;
+                      await widget.model.updateRetentionPeriod(value);
                     }
                   },
                 ),
@@ -277,8 +289,18 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
           ListTile(
+            title: Text('Search engine'),
+            subtitle: TextField(
+              controller: _searchEngine,
+              onSubmitted: (value) async {
+                _log.fine(value);
+                await widget.model.updateSearchEngine(value);
+              },
+            ),
+          ),
+          ListTile(
             title: Text('Last update'),
-            subtitle: Text('some day(s) ago'),
+            subtitle: Text('$days day(s) ago'),
           ),
           ListTile(
             title: Text('Source code repository'),
@@ -302,55 +324,59 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(appName),
-        actions: [
-          // sleep timer
-          TextButton.icon(
-            onPressed: () => _setSleepTimer(),
-            icon: Icon(Icons.snooze_rounded, size: 24),
-            iconAlignment: IconAlignment.end,
-            label: Text(sleepCount > 0 ? sleepCount.toString() : ''),
+    return ListenableBuilder(
+      listenable: widget.model,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(appName),
+            actions: [
+              // sleep timer
+              TextButton.icon(
+                onPressed: () => _setSleepTimer(),
+                icon: Icon(Icons.snooze_rounded, size: 24),
+                iconAlignment: IconAlignment.end,
+                label: Text(sleepCount > 0 ? sleepCount.toString() : ''),
+              ),
+              // episode filter
+              IconButton(
+                onPressed: () => _rotateViewFilter(),
+                icon: Icon(
+                  filter == ViewFilter.unplayed
+                      ? Icons.filter_list_rounded
+                      : filter == ViewFilter.all
+                      ? Icons.menu_rounded
+                      : Icons.favorite_outline_rounded,
+                ),
+              ),
+              // subscriptions
+              IconButton(
+                onPressed: () {
+                  context.go('/follow');
+                },
+                // onPressed: () async {
+                //   await context.push('/follow');
+                //   await widget.model.load();
+                // },
+                icon: Icon(Icons.subscriptions_rounded),
+              ),
+            ],
           ),
-          // episode filter
-          IconButton(
-            onPressed: () => _rotateViewFilter(),
-            icon: Icon(
+          body: RefreshIndicator(
+            onRefresh: widget.model.refreshData,
+            child: _buildEpisodeList(
               filter == ViewFilter.unplayed
-                  ? Icons.filter_list_rounded
-                  : filter == ViewFilter.all
-                  ? Icons.menu_rounded
-                  : Icons.favorite_outline_rounded,
+                  ? widget.model.unplayed
+                  : filter == ViewFilter.liked
+                  ? widget.model.liked
+                  : widget.model.episodes,
             ),
           ),
-          // subscriptions
-          IconButton(
-            onPressed:
-                () => context
-                    .push('/follow')
-                    .then((value) => widget.model.load()),
-            icon: Icon(Icons.subscriptions_rounded),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: widget.model.refreshData,
-        child: ListenableBuilder(
-          listenable: widget.model,
-          builder:
-              (context, child) => _buildEpisodeList(
-                filter == ViewFilter.unplayed
-                    ? widget.model.unplayed
-                    : filter == ViewFilter.liked
-                    ? widget.model.liked
-                    : widget.model.episodes,
-              ),
-        ),
-      ),
-      drawer: _buildDrawer(),
-      // https://github.com/flutter/flutter/issues/50314
-      bottomNavigationBar: MiniPlayer(),
+          drawer: _buildDrawer(),
+          // https://github.com/flutter/flutter/issues/50314
+          bottomNavigationBar: MiniPlayer(),
+        );
+      },
     );
   }
 }
