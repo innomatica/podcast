@@ -351,13 +351,12 @@ class _HomeViewState extends State<HomeView> {
               ),
               // subscriptions
               IconButton(
+                // onPressed: () {
+                //   context.go('/follow');
+                // },
                 onPressed: () {
                   context.go('/follow');
                 },
-                // onPressed: () async {
-                //   await context.push('/follow');
-                //   await widget.model.load();
-                // },
                 icon: Icon(Icons.subscriptions_rounded),
               ),
             ],

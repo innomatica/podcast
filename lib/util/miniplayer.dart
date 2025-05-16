@@ -124,7 +124,7 @@ class ModalPlayer extends StatelessWidget {
                               }
                             },
                             onLongPress: () {
-                              context.push(
+                              context.go(
                                 Uri(
                                   path: '/episode',
                                   queryParameters: {'guid': e.tag.id},

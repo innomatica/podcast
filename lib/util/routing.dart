@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../ui/browser/model.dart';
 import '../ui/episode/model.dart';
-import '../ui/feed/model.dart';
-import '../ui/feed/view.dart';
+import '../ui/channel/model.dart';
+import '../ui/channel/view.dart';
 import '../ui/episode/view.dart';
 import '../ui/browser/view.dart';
 import '../ui/follow/model.dart';
@@ -19,10 +19,9 @@ final router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) {
-        final model = context.read<HomeViewModel>();
-        return HomeView(model: model);
-      },
+      builder:
+          (context, state) =>
+              HomeView(model: context.read<HomeViewModel>()..load()),
       routes: [
         // browser
         GoRoute(

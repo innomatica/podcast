@@ -84,8 +84,7 @@ class FollowView extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => context.pop(),
-          // onPressed: () => context.go('/'),
+          onPressed: () => context.go('/'),
         ),
       ),
       body: ListenableBuilder(
@@ -99,10 +98,10 @@ class FollowView extends StatelessWidget {
           // _log.fine(res);
           if (res == 'pcidx') {
             // ignore: use_build_context_synchronously
-            context.push('/search').then((value) => model.load());
+            context.go('/search');
           } else if (res == 'rss') {
             // ignore: use_build_context_synchronously
-            context.push('/browser').then((value) => model.load());
+            context.go('/browser');
           }
         },
       ),

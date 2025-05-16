@@ -8,7 +8,7 @@ import '../data/service/local/sqflite.dart';
 import '../data/service/local/storage.dart';
 import '../ui/browser/model.dart';
 import '../ui/episode/model.dart';
-import '../ui/feed/model.dart';
+import '../ui/channel/model.dart';
 import '../ui/follow/model.dart';
 import '../ui/home/model.dart';
 import '../ui/search/model.dart';

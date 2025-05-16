@@ -65,7 +65,7 @@ class _BrowserViewState extends State<BrowserView> {
                 IconButton(
                   icon: Icon(Icons.keyboard_double_arrow_left_outlined),
                   onPressed: () {
-                    context.pop();
+                    context.go('/follow');
                   },
                 ),
                 IconButton(
@@ -75,7 +75,7 @@ class _BrowserViewState extends State<BrowserView> {
                       _controller.goBack();
                     } else {
                       // ignore: use_build_context_synchronously
-                      context.pop();
+                      context.go('/follow');
                     }
                   },
                 ),

@@ -119,7 +119,7 @@ class FeedView extends StatelessWidget {
           appBar: AppBar(
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_rounded),
-              onPressed: () => context.pop(),
+              onPressed: () => context.go('/follow'),
             ),
             title: Text("Feed Channel"),
             actions: [
@@ -130,7 +130,7 @@ class FeedView extends StatelessWidget {
                     onPressed: () async {
                       await model.unsubscribe();
                       if (context.mounted) {
-                        context.pop();
+                        context.go('/follow');
                       }
                     },
                   )

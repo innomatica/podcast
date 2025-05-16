@@ -16,7 +16,7 @@ class SearchView extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/follow'),
         ),
         title: Text('Podcast Index Search'),
       ),
@@ -136,7 +136,7 @@ class ChannelTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       onTap: () {
-        context.push(
+        context.go(
           Uri(
             path: '/channel',
             queryParameters: {'url': channel.url},

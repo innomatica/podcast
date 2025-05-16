@@ -33,7 +33,7 @@ class EpisodeView extends StatelessWidget {
                 leading: IconButton(
                   icon: Icon(Icons.arrow_back_ios_new_rounded),
                   onPressed: () {
-                    context.pop();
+                    context.go('/');
                   },
                 ),
                 // title
